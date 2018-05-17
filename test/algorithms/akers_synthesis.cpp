@@ -7,6 +7,7 @@
 
 #include <mockturtle/algorithms/akers_synthesis.hpp>
 #include <mockturtle/networks/mig.hpp>
+#include <mockturtle/networks/klut.hpp>
 
 using namespace mockturtle;
 
@@ -252,4 +253,28 @@ TEST_CASE( "Check leaves iterator -- easy case ", "[akers_synthesis]" )
         CHECK( xs[xs.size() - 1] == binary_xor( binary_and( xs[1], xs[2] ), binary_and( xs[4], xs[3] ) ) );
     } );
   }
+}
+
+TEST_CASE( "From klut to mig -- easy case ", "[akers_synthesis]" )
+{
+  klut_network klut;
+  auto a = klut.create_pi();
+  auto b = klut.create_pi();
+  auto c = klut.create_pi();
+
+  kitty::dynamic_truth_table tt_xor( 3u ); 
+
+  kitty::create_from_hex_string( tt_xor, "69" );
+
+  const auto n1 = klut.create_node( {a, b, c},   tt_xor );
+  const auto n2 = klut.create_node( {a, c, n1},  tt_xor );
+  const auto n3 = klut.create_node( {b, n1, n2}, tt_xor );
+  klut.create_po( n3 );
+
+  auto mig = akers_mapping (klut); 
+
+  CHECK( mig.num_pos() == 1 );
+  CHECK( mig.num_pis() == 3 );
+  CHECK( mig.num_gates() == 9 );
+
 }

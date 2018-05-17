@@ -12,6 +12,9 @@
 #include <kitty/dynamic_truth_table.hpp>
 
 #include "../traits.hpp"
+#include "../views/topo_view.hpp"
+#include <mockturtle/networks/klut.hpp>
+#include <mockturtle/networks/mig.hpp>
 
 namespace mockturtle
 {
@@ -809,5 +812,40 @@ Ntk akers_synthesis( kitty::dynamic_truth_table const& func, kitty::dynamic_trut
   const auto f = akers_synthesis( ntk, func, care, pis.begin(), pis.end() );
   ntk.create_po( f );
   return ntk;
+}
+
+/*! \brief Transforms a klut network into a mig using Akers synthesis. 
+ *
+ * Note that Akers synthesis is used on each klut 
+ *
+ *
+ * \param  klut klut_network 
+ * \return mig_network 
+ */
+
+mig_network akers_mapping( klut_network& klut )
+{
+  mig_network mig;
+  std::map<unsigned, mig_network::signal> lut_to_mig; // map the klut node index to the corresponding mig signal
+
+  lut_to_mig.insert( {0, mig.get_constant( false )} );
+  klut.foreach_pi( [&]( auto n, auto i ) { lut_to_mig.insert( {i + 1, mig.create_pi()} ); } );
+  topo_view<klut_network>( klut ).foreach_node( [&]( auto n ) {
+    if (  n > klut.num_pis() + 1 )
+    {
+      std::vector<mig_network::signal> fanin;
+      klut.foreach_fanin( n, [&]( auto s ) { fanin.push_back( lut_to_mig[s] ); } );
+      kitty::dynamic_truth_table func( fanin.size() );
+      func = klut.node_function( n );
+      auto care = func;
+      for ( auto i = 0u; i < unsigned( func.num_bits() ); i++ )
+        set_bit( care, i );
+      auto f = akers_synthesis( mig, func, care, fanin.begin(), fanin.end() );
+      lut_to_mig.insert( {n, f} );
+    }
+  } );
+
+  klut.foreach_po( [&]( auto n ) { mig.create_po( lut_to_mig[n] ); } );
+  return mig;
 }
 } // namespace mockturtle
