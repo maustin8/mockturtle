@@ -6,8 +6,8 @@
 #include <kitty/print.hpp>
 
 #include <mockturtle/algorithms/akers_synthesis.hpp>
-#include <mockturtle/networks/mig.hpp>
 #include <mockturtle/networks/klut.hpp>
+#include <mockturtle/networks/mig.hpp>
 
 using namespace mockturtle;
 
@@ -262,19 +262,52 @@ TEST_CASE( "From klut to mig -- easy case ", "[akers_synthesis]" )
   auto b = klut.create_pi();
   auto c = klut.create_pi();
 
-  kitty::dynamic_truth_table tt_xor( 3u ); 
+  kitty::dynamic_truth_table tt_xor( 3u );
+  kitty::dynamic_truth_table func( 3u );
 
   kitty::create_from_hex_string( tt_xor, "69" );
 
-  const auto n1 = klut.create_node( {a, b, c},   tt_xor );
-  const auto n2 = klut.create_node( {a, c, n1},  tt_xor );
+  const auto n1 = klut.create_node( {a, b, c}, tt_xor );
+  const auto n2 = klut.create_node( {a, c, n1}, tt_xor );
   const auto n3 = klut.create_node( {b, n1, n2}, tt_xor );
   klut.create_po( n3 );
-
-  auto mig = akers_mapping (klut); 
+ 
+  auto mig = akers_mapping( klut );
 
   CHECK( mig.num_pos() == 1 );
   CHECK( mig.num_pis() == 3 );
   CHECK( mig.num_gates() == 9 );
 
+  std::vector<kitty::dynamic_truth_table> xs{4, kitty::dynamic_truth_table( 3 )};
+  kitty::create_nth_var( xs[1], 0 );
+  kitty::create_nth_var( xs[2], 1 );
+  kitty::create_nth_var( xs[3], 2 );
+
+  for ( auto i = 0u; i < unsigned( xs[1].num_bits() ); i++ )
+  {
+    set_bit( xs[0], i );
+  }
+  mig.foreach_gate( [&]( auto n ) {
+    std::vector<kitty::dynamic_truth_table> fanin{3, kitty::dynamic_truth_table( 3 )};
+    mig.foreach_fanin( n, [&]( auto s, auto j ) { 
+      if ( mig.node_to_index( mig.get_node( s ) ) == 0 )
+      {
+        fanin[j] = ~xs[0];
+      }
+      else
+      {
+        fanin[j] = xs[mig.get_node( s )];
+      }
+    } );
+    xs.push_back( mig.compute( n, fanin.begin(), fanin.end() ) );
+  } );
+  mig.foreach_po( [&]( auto n ) {
+    auto func = xs[1] ^ xs[2] ^ xs[3]; 
+    auto f1 = xs[1] ^ xs[3] ^ func; 
+    auto f2 = xs[2] ^ func ^ f1; 
+    if ( mig.is_complemented( n) )
+      CHECK( ~xs[xs.size() - 1] == f2 );
+    else
+      CHECK( xs[xs.size() - 1] == f2 );
+  } );
 }

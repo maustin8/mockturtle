@@ -834,14 +834,15 @@ mig_network akers_mapping( klut_network& klut )
     if (  n > klut.num_pis() + 1 )
     {
       std::vector<mig_network::signal> fanin;
-      klut.foreach_fanin( n, [&]( auto s ) { fanin.push_back( lut_to_mig[s] ); } );
+      klut.foreach_fanin( n, [&]( auto s ) { 
+        fanin.push_back( lut_to_mig[klut.get_node(s)-1] ); } );
       kitty::dynamic_truth_table func( fanin.size() );
       func = klut.node_function( n );
       auto care = func;
       for ( auto i = 0u; i < unsigned( func.num_bits() ); i++ )
         set_bit( care, i );
       auto f = akers_synthesis( mig, func, care, fanin.begin(), fanin.end() );
-      lut_to_mig.insert( {n, f} );
+      lut_to_mig.insert( {n-1, f} );
     }
   } );
 
