@@ -69,7 +69,8 @@ TEST_CASE( "Check Akers for random - 4 inputs", "[akers_synthesis]" )
     kitty::create_nth_var( xs[4], 2 );
     kitty::create_nth_var( xs[5], 3 );
 
-    create_random( xs[0] );
+    create_from_hex_string( xs[0], "6999" );
+    //create_random( xs[0] );
 
     for ( auto i = 0u; i < unsigned( xs[0].num_bits() ); i++ )
     {
@@ -263,7 +264,6 @@ TEST_CASE( "From klut to mig -- easy case ", "[akers_synthesis]" )
   auto c = klut.create_pi();
 
   kitty::dynamic_truth_table tt_xor( 3u );
-  kitty::dynamic_truth_table func( 3u );
 
   kitty::create_from_hex_string( tt_xor, "69" );
 
@@ -311,3 +311,84 @@ TEST_CASE( "From klut to mig -- easy case ", "[akers_synthesis]" )
       CHECK( xs[xs.size() - 1] == f2 );
   } );
 }
+/*
+TEST_CASE( "From klut to mig -- multioutput ", "[akers_synthesis]" )
+{
+  klut_network klut;
+  auto a = klut.create_pi();
+  auto b = klut.create_pi();
+  auto c = klut.create_pi();
+  auto d = klut.create_pi();
+
+  kitty::dynamic_truth_table tt_xor( 4u );
+  kitty::dynamic_truth_table tt_and( 4u );
+  kitty::dynamic_truth_table tt_or( 4u );
+
+  kitty::create_from_hex_string( tt_xor, "6999" );
+  kitty::create_from_binary_string( tt_and, "0000000000000001" );
+  kitty::create_from_binary_string( tt_or, "0111111111111111" );
+
+  const auto n1 = klut.create_node( {a, b, c, d}, tt_xor );
+  const auto n2 = klut.create_node( {a, c, d, n1}, tt_or );
+  const auto n3 = klut.create_node( {b, c, n1, n2}, tt_and );
+  const auto n4 = klut.create_node( {a, c, n1, n3}, tt_xor );
+  klut.create_po( n3 );
+  klut.create_po( n4 );
+ 
+  auto mig = akers_mapping( klut );
+
+  CHECK( mig.num_pos() == 2 );
+  CHECK( mig.num_pis() == 4 );
+  CHECK( mig.num_gates() == 14 );
+
+  std::vector<kitty::dynamic_truth_table> xs{5, kitty::dynamic_truth_table( 4 )};
+  kitty::create_nth_var( xs[1], 0 );
+  kitty::create_nth_var( xs[2], 1 );
+  kitty::create_nth_var( xs[3], 2 );
+  kitty::create_nth_var( xs[4], 3 );
+
+  for ( auto i = 0u; i < unsigned( xs[1].num_bits() ); i++ )
+  {
+    set_bit( xs[0], i );
+  }
+  mig.foreach_gate( [&]( auto n ) {
+    std::vector<kitty::dynamic_truth_table> fanin{3, kitty::dynamic_truth_table( 4 )};
+    mig.foreach_fanin( n, [&]( auto s, auto j ) { 
+      std::cout << " nodo = " << n << " figlio " << mig.get_node(s) << " " << mig.is_complemented(s) << std::endl; 
+      if ( mig.node_to_index( mig.get_node( s ) ) == 0 )
+      {
+        fanin[j] = ~xs[0];
+      }
+      else
+      {
+        fanin[j] = xs[mig.get_node( s )];
+      }
+    } );
+    xs.push_back( mig.compute( n, fanin.begin(), fanin.end() ) );
+    print_binary(xs[xs.size()-1], std::cout); std::cout << std::endl; 
+  } );
+  mig.foreach_po( [&]( auto n ) {
+    auto func = xs[1] ^ xs[2] ^ xs[3] ^ xs[4]; 
+    print_binary(func, std::cout) ; std::cout << std::endl; 
+    auto f1 = binary_or(binary_or(binary_or(xs[1], xs[3]),xs[4]),func); 
+    print_binary(f1, std::cout) ; std::cout << std::endl; 
+    auto f2 = binary_and(binary_and(binary_and(xs[2], xs[3]), func) ,  f1); 
+    print_binary(f2, std::cout) ; std::cout << std::endl; 
+    auto f3 = xs[1] ^ xs[3] ^ func ^ f2; 
+    std::cout << mig.get_node(n) << std::endl; 
+    if ( mig.is_complemented( n ) )
+    {
+      if (mig.get_node(n) == 18)
+      CHECK( ~xs[xs.size() - 1] == f3 );
+      else 
+      CHECK(~xs[xs.size() - 5] == f2);
+    }
+    else
+    {
+      if (mig.get_node(n) == 18)
+      CHECK( xs[xs.size() - 1] == f3 );
+      else 
+      CHECK(xs[xs.size() - 5] == f2 );
+    }
+  } );
+}*/

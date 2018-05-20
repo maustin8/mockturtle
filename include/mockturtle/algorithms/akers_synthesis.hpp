@@ -826,7 +826,7 @@ Ntk akers_synthesis( kitty::dynamic_truth_table const& func, kitty::dynamic_trut
 mig_network akers_mapping( klut_network& klut )
 {
   mig_network mig;
-  std::map<unsigned, mig_network::signal> lut_to_mig; // map the klut node index to the corresponding mig signal
+  std::map<unsigned, mig_network::signal> lut_to_mig; 
 
   lut_to_mig.insert( {0, mig.get_constant( false )} );
   klut.foreach_pi( [&]( auto n, auto i ) { lut_to_mig.insert( {i + 1, mig.create_pi()} ); } );
@@ -846,7 +846,8 @@ mig_network akers_mapping( klut_network& klut )
     }
   } );
 
-  klut.foreach_po( [&]( auto n ) { mig.create_po( lut_to_mig[n] ); } );
+  klut.foreach_po( [&]( auto n ) { 
+    mig.create_po( lut_to_mig[n-1] ); } );
   return mig;
 }
 } // namespace mockturtle
