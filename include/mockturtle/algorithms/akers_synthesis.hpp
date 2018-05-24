@@ -847,6 +847,14 @@ mig_network akers_mapping( klut_network& klut )
   } );
 
   klut.foreach_po( [&]( auto n ) { 
+    if (klut.node_to_index(n) == 0)
+    {
+      if (klut.is_complemented(n))
+      mig.create_po( !lut_to_mig[0] );
+      else
+      mig.create_po( lut_to_mig[0] );
+    }
+    else
     mig.create_po( lut_to_mig[n-1] ); } );
   return mig;
 }
