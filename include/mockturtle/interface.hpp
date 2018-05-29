@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -39,6 +40,8 @@
 
 namespace mockturtle
 {
+
+static_assert( false, "file interface.hpp cannot be included, it's only used for documentation" );
 
 class network final
 {
@@ -409,6 +412,37 @@ public:
   template<typename Iterator>
   iterates_over_t<Iterator, T>
   compute( node const& n, Iterator begin, Iterator end ) const;
+#pragma endregion
+
+#pragma region Mapping
+  /*! \brief Returns true, if network has a mapping. */
+  bool has_mapping() const;
+
+  /*! \brief Returns true, if node is mapped. */
+  bool is_mapped( node const& n ) const;
+
+  /*! \brief Clears a mapping. */
+  void clear_mapping();
+
+  /*! \brief Number of mapped nodes. */
+  uint32_t num_luts() const;
+
+  /*! \brief Adds a node to the mapping. */
+  template<typename LeavesIterator>
+  void add_to_mapping( node const& n, LeavesIterator begin, LeavesIterator end );
+
+  /*! \brief Remove from mapping. */
+  void remove_from_mapping( node const& n );
+
+  /*! \brief Gets LUT function */
+  kitty::dynamic_truth_table lut_function( node const& n );
+
+  /*! \brief Sets LUT function. */
+  void set_lut_function( node const& n, kitty::dynamic_truth_table const& function );
+
+  /*! \brief Iterators over node's mapping fan-ins. */
+  template<typename Fn>
+  void foreach_lut_fanin( node const& n, Fn&& fn ) const;
 #pragma endregion
 
 #pragma region Custom node values
