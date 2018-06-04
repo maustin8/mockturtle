@@ -2,10 +2,13 @@
 
 #include <vector>
 
+#include <mockturtle/algorithms/collapse_mapped.hpp>
 #include <mockturtle/algorithms/cut_enumeration.hpp>
 #include <mockturtle/algorithms/lut_mapping.hpp>
 #include <mockturtle/networks/aig.hpp>
+#include <mockturtle/networks/klut.hpp>
 #include <mockturtle/io/aiger_reader.hpp>
+#include <mockturtle/io/write_bench.hpp>
 #include <mockturtle/views/mapping_view.hpp>
 
 #include <fmt/format.h>
@@ -13,7 +16,7 @@
 
 using namespace mockturtle;
 
-template<class Ntk, class Fn, class Ret = std::result_of_t<Fn(Ntk)>>
+template<class Ntk, class Fn, class Ret = std::result_of_t<Fn(Ntk, int)>>
 std::vector<Ret> foreach_benchmark( Fn&& fn )
 {
   std::vector<Ret> v;
@@ -21,14 +24,14 @@ std::vector<Ret> foreach_benchmark( Fn&& fn )
   {
     Ntk ntk;
     lorina::read_aiger( fmt::format( "{}/c{}.aig", BENCHMARKS_PATH, id ), aiger_reader( ntk ) );
-    v.emplace_back( fn( ntk ) );
+    v.emplace_back( fn( ntk, id ) );
   }
   return v;
 }
 
 TEST_CASE( "Test quality of cut_enumeration", "[quality]" )
 {
-  const auto v = foreach_benchmark<aig_network>( []( auto const& ntk ) {
+  const auto v = foreach_benchmark<aig_network>( []( auto const& ntk, auto ) {
     return cut_enumeration( ntk ).total_cuts();
   } );
 
@@ -37,11 +40,11 @@ TEST_CASE( "Test quality of cut_enumeration", "[quality]" )
 
 TEST_CASE( "Test quality of lut_mapping", "[quality]" )
 {
-  const auto v = foreach_benchmark<aig_network>( []( auto const& ntk ) {
-    mapping_view mapped{ntk};
-    lut_mapping( mapped );
+  const auto v = foreach_benchmark<aig_network>( []( auto const& ntk, auto ) {
+    mapping_view<aig_network, true> mapped{ntk};
+    lut_mapping<mapping_view<aig_network, true>, true>( mapped );
     return mapped.num_luts();
   } );
 
-  CHECK( v == std::vector<unsigned>{{2, 50, 68, 78, 68, 71, 97, 231, 267, 453, 344}});
+  CHECK( v == std::vector<unsigned>{{2, 50, 68, 77, 68, 71, 97, 231, 275, 453, 347}});
 }
