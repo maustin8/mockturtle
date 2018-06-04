@@ -43,7 +43,7 @@ TEST_CASE( "Test quality of lut_mapping", "[quality]" )
   const auto v = foreach_benchmark<aig_network>( []( auto const& ntk, auto ) {
     mapping_view<aig_network, true> mapped{ntk};
     lut_mapping<mapping_view<aig_network, true>, true>( mapped );
-    return mapped.num_luts();
+    return mapped.num_cells();
   } );
 
   CHECK( v == std::vector<unsigned>{{2, 50, 68, 77, 68, 71, 97, 231, 275, 453, 347}});
