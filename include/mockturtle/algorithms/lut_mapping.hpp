@@ -286,6 +286,7 @@ private:
   {
     constexpr auto mf_eps{0.005f};
 
+    bool mapped{map_refs[index] > 0};
     float flow;
     uint32_t time{0};
     int32_t best_cut{-1};
@@ -293,7 +294,7 @@ private:
     uint32_t best_time{std::numeric_limits<uint32_t>::max()};
     int32_t cut_index{-1};
 
-    if ( ela && map_refs[index] )
+    if ( ela && mapped )
     {
       cut_deref( cuts.cuts( index )[0] );
     }
@@ -323,7 +324,7 @@ private:
 
     //std::cout << "Best cut for " << index << " = " << best_cut << std::endl;
 
-    if ( ela && map_refs[index] )
+    if ( ela && mapped )
     {
       cut_ref( cuts.cuts( index )[best_cut] );
     }
@@ -366,14 +367,14 @@ private:
 
       if constexpr ( StoreFunction )
       {
-        ntk.set_lut_function( n, cuts.truth_table( cuts.cuts( index ).best() ) );
+        ntk.set_cell_function( n, cuts.truth_table( cuts.cuts( index ).best() ) );
       }
     }
   }
 
   void print_state()
   {
-    for ( auto i = 0; i < ntk.size(); ++i )
+    for ( auto i = 0u; i < ntk.size(); ++i )
     {
       std::cout << fmt::format( "*** Obj = {:>3} (node = {:>3})  FlowRefs = {:5.2f}  MapRefs = {:>2}  Flow = {:5.2f}  Delay = {:>3}\n", i, ntk.index_to_node( i ), flow_refs[i], map_refs[i], flows[i], delays[i] );
       //std::cout << cuts.cuts( i );
@@ -459,7 +460,7 @@ void lut_mapping( Ntk& ntk, lut_mapping_params const& ps = {} )
   static_assert( has_fanout_size_v<Ntk>, "Ntk does not implement the fanout_size method" );
   static_assert( has_clear_mapping_v<Ntk>, "Ntk does not implement the clear_mapping method" );
   static_assert( has_add_to_mapping_v<Ntk>, "Ntk does not implement the add_to_mapping method" );
-  static_assert( !StoreFunction || has_set_lut_function_v<Ntk>, "Ntk does not implement the set_lut_function method" );
+  static_assert( !StoreFunction || has_set_cell_function_v<Ntk>, "Ntk does not implement the set_cell_function method" );
 
   detail::lut_mapping_impl<Ntk, StoreFunction, CutData> p( ntk, ps );
   p.run();
