@@ -95,10 +95,10 @@ public:
 
     /* it could be that internal nodes also point to an output driver node */
     ntk.foreach_node( [&]( auto const n ) {
-      if ( ntk.is_constant( n ) || ntk.is_pi( n ) || !ntk.is_mapped( n ) )
+      if ( ntk.is_constant( n ) || ntk.is_pi( n ) || !ntk.is_cell_root( n ) )
         return;
 
-      ntk.foreach_lut_fanin( n, [&]( auto fanin ) {
+      ntk.foreach_cell_fanin( n, [&]( auto fanin ) {
         if ( node_driver_type[fanin] == driver_type::neg )
         {
           node_driver_type[fanin] = driver_type::mixed;
@@ -107,25 +107,62 @@ public:
     } );
 
     /* constants */
-    node_to_signal[ntk.get_constant( false )] = dest.get_constant( false );
+    auto add_constant_to_map = [&]( bool value ) {
+      const auto n = ntk.get_node( ntk.get_constant( value ) );
+      switch ( node_driver_type[n] )
+      {
+      default:
+      case driver_type::none:
+      case driver_type::pos:
+        node_to_signal[n] = dest.get_constant( value );
+        break;
+
+      case driver_type::neg:
+        node_to_signal[n] = dest.get_constant( !value );
+        break;
+
+      case driver_type::mixed:
+        node_to_signal[n] = dest.get_constant( value );
+        opposites[n] = dest.get_constant( !value );
+        break;
+      }
+    };
+
+    add_constant_to_map( false );
     if ( ntk.get_node( ntk.get_constant( false ) ) != ntk.get_node( ntk.get_constant( true ) ) )
     {
-      node_to_signal[ntk.get_constant( true )] = dest.get_constant( true );
+      add_constant_to_map( true );
     }
 
     /* primary inputs */
     ntk.foreach_pi( [&]( auto n ) {
-      node_to_signal[n] = dest.create_pi();
+      switch ( node_driver_type[n] )
+      {
+      default:
+      case driver_type::none:
+      case driver_type::pos:
+        node_to_signal[n] = dest.create_pi();
+        break;
+
+      case driver_type::neg:
+        node_to_signal[n] = dest.create_not( dest.create_pi() );
+        break;
+
+      case driver_type::mixed:
+        node_to_signal[n] = dest.create_pi();
+        opposites[n] = dest.create_not( node_to_signal[n] );
+        break;
+      }
     } );
 
     /* nodes */
     topo_view topo{ntk};
     topo.foreach_node( [&]( auto n ) {
-      if ( ntk.is_constant( n ) || ntk.is_pi( n ) || !ntk.is_mapped( n ) )
+      if ( ntk.is_constant( n ) || ntk.is_pi( n ) || !ntk.is_cell_root( n ) )
         return;
 
       std::vector<signal<NtkDest>> children;
-      ntk.foreach_lut_fanin( n, [&]( auto fanin ) {
+      ntk.foreach_cell_fanin( n, [&]( auto fanin ) {
         children.push_back( node_to_signal[fanin] );
       } );
 
@@ -134,33 +171,25 @@ public:
       default:
       case driver_type::none:
       case driver_type::pos:
-        node_to_signal[n] = dest.create_node( children, ntk.lut_function( n ) );
+        node_to_signal[n] = dest.create_node( children, ntk.cell_function( n ) );
         break;
 
       case driver_type::neg:
-        node_to_signal[n] = dest.create_node( children, ~ntk.lut_function( n ) );
+        node_to_signal[n] = dest.create_node( children, ~ntk.cell_function( n ) );
         break;
 
       case driver_type::mixed:
-        node_to_signal[n] = dest.create_node( children, ntk.lut_function( n ) );
-        opposites[n] = dest.create_node( children, ~ntk.lut_function( n ) );
+        node_to_signal[n] = dest.create_node( children, ntk.cell_function( n ) );
+        opposites[n] = dest.create_node( children, ~ntk.cell_function( n ) );
         break;
       }
     } );
 
     /* outputs */
     ntk.foreach_po( [&]( auto const& f ) {
-      if ( ntk.is_complemented( f ) )
+      if ( ntk.is_complemented( f ) && node_driver_type[f] == driver_type::mixed )
       {
-        if ( node_driver_type[f] == driver_type::neg )
-        {
-          dest.create_po( node_to_signal[f] );
-        }
-        else
-        {
-          assert( node_driver_type[f] == driver_type::mixed );
-          dest.create_po( opposites[ntk.get_node( f )] );
-        }
+        dest.create_po( opposites[ntk.get_node( f )] );
       }
       else
       {
@@ -180,15 +209,15 @@ private:
 /*! \brief Collapse mapped network into k-LUT network.
  *
  * Collapses a mapped network into a k-LUT network.  In the mapped network each
- * LUT is represented in terms of a collection of nodes from the subject graph.
- * This methods creates a new network in which each LUT is represented by a
+ * cell is represented in terms of a collection of nodes from the subject graph.
+ * This methods creates a new network in which each cell is represented by a
  * single node.
  *
  * This function performs some optimizations with respect to possible output
  * complementations in the subject graph:
  *
  * - If an output driver is only used in positive form, nothing changes
- * - If an output driver is only used in complemented form, the LUT function 
+ * - If an output driver is only used in complemented form, the cell function 
  *   of the node is negated.
  * - If an output driver is used in both forms, two nodes will be created for
  *   the mapped node.
@@ -200,11 +229,11 @@ private:
  * - `foreach_pi`
  * - `foreach_po`
  * - `foreach_node`
- * - `foreach_lut_fanin`
+ * - `foreach_cell_fanin`
  * - `is_constant`
  * - `is_pi`
- * - `is_mapped`
- * - `lut_function`
+ * - `is_cell_root`
+ * - `cell_function`
  * - `is_complemented`
  *
  * **Required network functions for return value (type NtkDest):**
@@ -220,16 +249,17 @@ std::optional<NtkDest> collapse_mapped_network( NtkSource const& ntk )
   static_assert( is_network_type_v<NtkDest>, "NtkDest is not a network type" );
 
   static_assert( has_has_mapping_v<NtkSource>, "NtkSource does not implement the has_mapping method" );
+  static_assert( has_num_gates_v<NtkSource>, "NtkSource does not implement the num_gates method" );
   static_assert( has_get_constant_v<NtkSource>, "NtkSource does not implement the get_constant method" );
   static_assert( has_get_node_v<NtkSource>, "NtkSource does not implement the get_node method" );
   static_assert( has_foreach_pi_v<NtkSource>, "NtkSource does not implement the foreach_pi method" );
   static_assert( has_foreach_po_v<NtkSource>, "NtkSource does not implement the foreach_po method" );
   static_assert( has_foreach_node_v<NtkSource>, "NtkSource does not implement the foreach_node method" );
-  static_assert( has_foreach_lut_fanin_v<NtkSource>, "NtkSource does not implement the foreach_lut_fanin method" );
+  static_assert( has_foreach_cell_fanin_v<NtkSource>, "NtkSource does not implement the foreach_cell_fanin method" );
   static_assert( has_is_constant_v<NtkSource>, "NtkSource does not implement the is_constant method" );
   static_assert( has_is_pi_v<NtkSource>, "NtkSource does not implement the is_pi method" );
-  static_assert( has_is_mapped_v<NtkSource>, "NtkSource does not implement the is_mapped method" );
-  static_assert( has_lut_function_v<NtkSource>, "NtkSource does not implement the lut_function method" );
+  static_assert( has_is_cell_root_v<NtkSource>, "NtkSource does not implement the is_cell_root method" );
+  static_assert( has_cell_function_v<NtkSource>, "NtkSource does not implement the cell_function method" );
   static_assert( has_is_complemented_v<NtkSource>, "NtkSource does not implement the is_complemented method" );
 
   static_assert( has_get_constant_v<NtkDest>, "NtkDest does not implement the get_constant method" );
@@ -237,7 +267,7 @@ std::optional<NtkDest> collapse_mapped_network( NtkSource const& ntk )
   static_assert( has_create_node_v<NtkDest>, "NtkDest does not implement the create_node method" );
   static_assert( has_create_not_v<NtkDest>, "NtkDest does not implement the create_not method" );
 
-  if ( !ntk.has_mapping() )
+  if ( !ntk.has_mapping() && ntk.num_gates() > 0 )
   {
     return std::nullopt;
   }

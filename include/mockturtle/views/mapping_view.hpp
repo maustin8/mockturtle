@@ -151,11 +151,10 @@ public:
   }
 
 
-  bool has_mapping()
+  bool has_mapping() const
   {
     return _mapping_storage.mapping_size > 0;
   }
-
 
   bool is_cell_root( node const& n ) const
   {
@@ -169,8 +168,8 @@ public:
     _mapping_storage.mapping_size = 0;
   }
 
-uint32_t num_cells() const
 
+  uint32_t num_cells() const
   {
     return _mapping_storage.mapping_size;
   }
