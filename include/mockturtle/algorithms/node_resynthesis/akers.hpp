@@ -1,5 +1,5 @@
-/* kitty: C++ truth table library
- * Copyright (C) 2017-2018  EPFL
+/* mockturtle: C++ logic network library
+ * Copyright (C) 2018  EPFL
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -24,42 +24,52 @@
  */
 
 /*!
-  \file kitty.hpp
-  \brief Main header for kitty
+  \file akers.hpp
+  \brief Resynthesis with Akers synthesis
 
   \author Mathias Soeken
+  \author Eleonora Testa
 */
 
 #pragma once
 
-#include "static_truth_table.hpp"
-#include "dynamic_truth_table.hpp"
+#include <iostream>
+#include <sstream>
+#include <unordered_map>
+#include <vector>
 
-#include "affine.hpp"
-#include "algorithm.hpp"
-#include "bit_operations.hpp"
-#include "cnf.hpp"
-#include "constructors.hpp"
-#include "cube.hpp"
-#include "esop.hpp"
-#include "hash.hpp"
-#include "implicant.hpp"
-#include "isop.hpp"
-#include "npn.hpp"
-#include "operations.hpp"
-#include "operators.hpp"
-#include "permutation.hpp"
-#include "print.hpp"
-#include "properties.hpp"
-#include "spectral.hpp"
-#include "traits.hpp"
+#include <kitty/dynamic_truth_table.hpp>
 
-/*
-         /\___/\
-        (  o o  )
-        /   *   \
-        \__\_/__/
-          /   \
-         / ___ \
-         \/___\/
-*/
+#include "../../algorithms/akers_synthesis.hpp"
+#include "../../networks/mig.hpp"
+
+namespace mockturtle
+{
+
+/*! \brief Resynthesis function based on Akers synthesis.
+ *
+ * This resynthesis function can be passed to ``node_resynthesis``.  It will
+ * call Akers synthesis on each node.
+ *
+   \verbatim embed:rst
+  
+   Example
+   
+   .. code-block:: c++
+   
+      const klut_network klut = ...;
+      akers_resynthesis resyn;
+      const auto mig = node_resynthesis<mig_network>( klut, resyn );
+   \endverbatim
+ */
+class akers_resynthesis
+{
+public:
+  template<typename LeavesIterator>
+  mig_network::signal operator()( mig_network& mig, kitty::dynamic_truth_table const& function, LeavesIterator begin, LeavesIterator end )
+  {
+    return akers_synthesis( mig, function, function, begin, end );
+  }
+};
+
+} /* namespace mockturtle */

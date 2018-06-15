@@ -95,7 +95,7 @@ public:
     {
     }
 
-    signal( std::size_t data )
+    explicit signal( std::size_t data )
         : data( data )
     {
     }
@@ -116,7 +116,7 @@ public:
 
     signal operator!() const
     {
-      return data ^ 1;
+      return signal( data ^ 1 );
     }
 
     signal operator+() const
@@ -131,7 +131,7 @@ public:
 
     signal operator^( bool complement ) const
     {
-      return data ^ ( complement ? 1 : 0 );
+      return signal( data ^ ( complement ? 1 : 0 ) );
     }
 
     bool operator==( signal const& other ) const
@@ -194,6 +194,12 @@ public:
   bool is_pi( node const& n ) const
   {
     return _storage->nodes[n].children[0].data == ~static_cast<std::size_t>( 0 ) && _storage->nodes[n].children[1].data == ~static_cast<std::size_t>( 0 );
+  }
+
+  bool constant_value( node const& n ) const
+  {
+    (void)n;
+    return false;
   }
 #pragma endregion
 
@@ -342,6 +348,11 @@ public:
     return f.index;
   }
 
+  signal make_signal( node const& n ) const
+  {
+    return signal( n, 0 );
+  }
+
   bool is_complemented( signal const& f ) const
   {
     return f.complement;
@@ -444,24 +455,7 @@ public:
   }
 
   template<typename Iterator>
-  iterates_over_t<Iterator, kitty::dynamic_truth_table>
-  compute( node const& n, Iterator begin, Iterator end ) const
-  {
-    (void)end;
-
-    assert( n != 0 && !is_pi( n ) );
-
-    auto const& c1 = _storage->nodes[n].children[0];
-    auto const& c2 = _storage->nodes[n].children[1];
-
-    auto tt1 = *begin++;
-    auto tt2 = *begin++;
-
-    return ( c1.weight ? ~tt1 : tt1 ) & ( c2.weight ? ~tt2 : tt2 );
-  }
-
-  template<int NumVars, typename Iterator>
-  iterates_over_t<Iterator, kitty::static_truth_table<NumVars>>
+  iterates_over_truth_table_t<Iterator>
   compute( node const& n, Iterator begin, Iterator end ) const
   {
     (void)end;

@@ -71,6 +71,9 @@ template<class T, class Ntk>
 class node_map
 {
 public:
+  using reference = typename std::vector<T>::reference;
+  using const_reference = typename std::vector<T>::const_reference;
+public:
   /*! \brief Default constructor. */
   explicit node_map( Ntk const& ntk )
       : ntk( ntk ),
@@ -97,13 +100,13 @@ public:
   }
 
   /*! \brief Mutable access to value by node. */
-  auto& operator[]( node<Ntk> const& n )
+  reference operator[]( node<Ntk> const& n )
   {
     return data[ntk.node_to_index( n )];
   }
 
   /*! \brief Constant access to value by node. */
-  auto const& operator[]( node<Ntk> const& n ) const
+  const_reference operator[]( node<Ntk> const& n ) const
   {
     return data[ntk.node_to_index( n )];
   }
@@ -114,7 +117,7 @@ public:
    * are the same in the network implementation, this method is disabled.
    */
   template<typename _Ntk = Ntk, typename = std::enable_if_t<!std::is_same_v<signal<_Ntk>, node<_Ntk>>>>
-  auto& operator[]( signal<Ntk> const& f )
+  reference operator[]( signal<Ntk> const& f )
   {
     return data[ntk.node_to_index( ntk.get_node( f ) )];
   }
@@ -125,9 +128,23 @@ public:
    * are the same in the network implementation, this method is disabled.
    */
   template<typename _Ntk = Ntk, typename = std::enable_if_t<!std::is_same_v<signal<_Ntk>, node<_Ntk>>>>
-  auto const& operator[]( signal<Ntk> const& f ) const
+  const_reference operator[]( signal<Ntk> const& f ) const
   {
     return data[ntk.node_to_index( ntk.get_node( f ) )];
+  }
+
+  /*! \brief Resets the size of the map.
+   *
+   * This function should be called, if the network changed in size.  Then, the
+   * map is cleared, and resized to the current network's size.  All values are
+   * initialized with `init_value`.
+   * 
+   * \param init_value Initialization value after resize
+   */
+  void reset( T const& init_value = {} )
+  {
+    data.clear();
+    data.resize( ntk.size(), init_value );
   }
 
 private:

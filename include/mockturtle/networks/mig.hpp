@@ -101,7 +101,7 @@ public:
 
     signal operator!() const
     {
-      return data ^ 1;
+      return signal( data ^ 1 );
     }
 
     signal operator+() const
@@ -116,7 +116,7 @@ public:
 
     signal operator^( bool complement ) const
     {
-      return data ^ ( complement ? 1 : 0 );
+      return signal( data ^ ( complement ? 1 : 0 ) );
     }
 
     bool operator==( signal const& other ) const
@@ -180,6 +180,12 @@ public:
   bool is_pi( node const& n ) const
   {
     return _storage->nodes[n].children[0].data == ~static_cast<std::size_t>( 0 ) && _storage->nodes[n].children[1].data == ~static_cast<std::size_t>( 0 ) && _storage->nodes[n].children[2].data == ~static_cast<std::size_t>( 0 );
+  }
+
+  bool constant_value( node const& n ) const
+  {
+    (void)n;
+    return false;
   }
 #pragma endregion
 
@@ -404,6 +410,11 @@ public:
     return f.index;
   }
 
+  signal make_signal( node const& n ) const
+  {
+    return signal( n, 0 );
+  }
+
   bool is_complemented( signal const& f ) const
   {
     return f.complement;
@@ -514,7 +525,7 @@ public:
   }
 
   template<typename Iterator>
-  iterates_over_t<Iterator, kitty::dynamic_truth_table>
+  iterates_over_truth_table_t<Iterator>
   compute( node const& n, Iterator begin, Iterator end ) const
   {
     (void)end;

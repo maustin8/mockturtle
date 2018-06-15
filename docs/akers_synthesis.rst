@@ -1,6 +1,8 @@
 Akers synthesis 
 ---------------
 
+**Header:** ``mockturtle/algorithms/akers_synthesis.hpp``
+
 The algorithm implements the method for 3-input majority-based logic synthesis proposed in 
 “*Synthesis of combinational logic using three-input majority 
 gates*” by Sheldon B. Akers, Jr. (1962). 
@@ -12,7 +14,7 @@ The easiest way to run Akers' synthesis is by doing:
 
 .. code-block:: c++
 
-   auto mig = akers_synthesis<mig_network>( func, care);
+   auto mig = akers_synthesis<mig_network>( func, care );
 
 Here, the function returns an MIG, with as many inputs as the number of 
 variables of func and one primary output. 

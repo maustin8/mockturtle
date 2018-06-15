@@ -1,31 +1,33 @@
-#if 0
 #include <catch.hpp>
 
-#include <mockturtle/traits.hpp>
 #include <mockturtle/algorithms/cut_rewriting.hpp>
-#include <mockturtle/networks/klut.hpp>
-
-#include <kitty/constructors.hpp>
-#include <kitty/dynamic_truth_table.hpp>
+#include <mockturtle/algorithms/node_resynthesis/akers.hpp>
+#include <mockturtle/algorithms/node_resynthesis/mig_npn.hpp>
+#include <mockturtle/io/aiger_reader.hpp>
+#include <mockturtle/io/write_bench.hpp>
+#include <mockturtle/networks/mig.hpp>
+#include <mockturtle/traits.hpp>
+#include <lorina/aiger.hpp>
 
 using namespace mockturtle;
 
-TEST_CASE( "Cut rewriting of bad XOR", "[cut_rewriting]" )
+TEST_CASE( "Cut rewriting of bad MAJ", "[cut_rewriting]" )
 {
-  klut_network klut;
-  const auto a = klut.create_pi();
-  const auto b = klut.create_pi();
+  mig_network mig;
+  const auto a = mig.create_pi();
+  const auto b = mig.create_pi();
+  const auto c = mig.create_pi();
 
-  kitty::dynamic_truth_table _nand( 2u );
-  kitty::create_from_binary_string( _nand, "0001" );
+  const auto f = mig.create_maj( a, mig.create_maj( a, b, c ), c );
+  mig.create_po( f );
 
-  const auto f1 = klut.create_node( {a, b}, _nand );
-  const auto f2 = klut.create_node( {a, f1}, _nand );
-  const auto f3 = klut.create_node( {b, f1}, _nand );
-  const auto f4 = klut.create_node( {f2, f3}, _nand );
+  mig_npn_resynthesis resyn;
+  cut_rewriting( mig, resyn );
 
-  klut.create_po( f4 );
+  mig = cleanup_dangling( mig );
 
-  cut_rewriting( klut );
+  CHECK( mig.size() == 5 );
+  CHECK( mig.num_pis() == 3 );
+  CHECK( mig.num_pos() == 1 );
+  CHECK( mig.num_gates() == 1 );
 }
-#endif
