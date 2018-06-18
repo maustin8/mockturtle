@@ -36,19 +36,12 @@
 #include <vector>
 
 #include "../traits.hpp"
-<<<<<<< HEAD
-=======
 #include "../utils/node_map.hpp"
->>>>>>> cut_rewriting
 #include "immutable_view.hpp"
 
 namespace mockturtle
 {
 
-<<<<<<< HEAD
-template<typename Ntk, bool has_depth_interface = has_depth_v<Ntk>&& has_level_v<Ntk>>
-struct depth_view
-=======
 /*! \brief Implements `depth` and `get_level` methods for networks.
  *
  * This view computes the level of each node and also the depth of
@@ -83,16 +76,11 @@ struct depth_view
  */
 template<typename Ntk, bool has_depth_interface = has_depth_v<Ntk> && has_level_v<Ntk>>
 class depth_view
->>>>>>> cut_rewriting
 {
 };
 
 template<typename Ntk>
-<<<<<<< HEAD
-struct depth_view<Ntk, true> : public Ntk
-=======
 class depth_view<Ntk, true> : public Ntk
->>>>>>> cut_rewriting
 {
 public:
   depth_view( Ntk const& ntk ) : Ntk( ntk )
