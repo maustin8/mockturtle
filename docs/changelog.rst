@@ -11,7 +11,7 @@ v0.1 (not yet released)
   `#1 <https://github.com/lsils/mockturtle/pull/1>`_
   `#4 <https://github.com/lsils/mockturtle/pull/4>`_
 
-* Algorithms: `cut_enumeration`, `lut_mapping`, `akers_synthesis`, `collapse_mapped_network`, `mig_algebraic_depth_rewriting`, `cleanup_dangling`, `node_resynthesis`, `reconv_cut`, `simulate`
+* Algorithms: `cut_enumeration`, `lut_mapping`, `akers_synthesis`, `collapse_mapped_network`, `mig_algebraic_depth_rewriting`, `cleanup_dangling`, `node_resynthesis`, `reconv_cut`, `simulate`, `simulate_nodes`, `cut_rewriting`
   `#2 <https://github.com/lsils/mockturtle/pull/2>`_
   `#7 <https://github.com/lsils/mockturtle/pull/7>`_
   `#9 <https://github.com/lsils/mockturtle/pull/9>`_
@@ -20,6 +20,8 @@ v0.1 (not yet released)
   `#17 <https://github.com/lsils/mockturtle/pull/17>`_
   `#24 <https://github.com/lsils/mockturtle/pull/24>`_
   `#25 <https://github.com/lsils/mockturtle/pull/25>`_
+  `#28 <https://github.com/lsils/mockturtle/pull/28>`_
+  `#31 <https://github.com/lsils/mockturtle/pull/31>`_
 
 * Views: `topo_view`, `immutable_view`, `mapping_view`, `depth_view`, `cut_view`, `parents_view`
   `#3 <https://github.com/lsils/mockturtle/pull/3>`_
@@ -35,7 +37,8 @@ v0.1 (not yet released)
 * Generators for arithmetic circuits
   `#5 <https://github.com/lsils/mockturtle/pull/5>`_
 
-* Utility data structures: `truth_table_cache`, `cut`, `cut_set`, `node_map`
+* Utility data structures: `truth_table_cache`, `cut`, `cut_set`, `node_map`, `progress_bar`
   `#1 <https://github.com/lsils/mockturtle/pull/1>`_
   `#2 <https://github.com/lsils/mockturtle/pull/2>`_
   `#13 <https://github.com/lsils/mockturtle/pull/13>`_
+  `#30 <https://github.com/lsils/mockturtle/pull/30>`_
